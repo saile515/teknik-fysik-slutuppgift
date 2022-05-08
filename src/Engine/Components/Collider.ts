@@ -2,6 +2,7 @@ import Vector2, { AddVector2 } from "../Core/BaseClasses/Vector2";
 
 import BaseComponent from "../Core/BaseClasses/BaseComponent";
 import BaseObject from "../Core/BaseClasses/BaseObject";
+import Rigidbody from "./Rigidbody";
 
 export default class Collider extends BaseComponent {
 	INF: number;
@@ -118,13 +119,73 @@ export default class Collider extends BaseComponent {
 		return count % 2 == 1;
 	}
 
+	calculateIntersection(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vector2) {
+		var c2x = p3.x - p4.x; // (x3 - x4)
+		var c3x = p1.x - p2.x; // (x1 - x2)
+		var c2y = p3.y - p4.y; // (y3 - y4)
+		var c3y = p1.y - p2.y; // (y1 - y2)
+
+		// down part of intersection point formula
+		var d = c3x * c2y - c3y * c2x;
+
+		if (d == 0) {
+			return null;
+		}
+
+		// upper part of intersection point formula
+		var u1 = p1.x * p2.y - p1.y * p2.x; // (x1 * y2 - y1 * x2)
+		var u4 = p3.x * p4.y - p3.y * p4.x; // (x3 * y4 - y3 * x4)
+
+		// intersection point formula
+
+		var px = (u1 * c2x - c3x * u4) / d;
+		var py = (u1 * c2y - c3y * u4) / d;
+
+		var p = new Vector2(px, py);
+
+		return p;
+	}
+
+	calculateNormal(p1: Vector2, p2: Vector2) {
+		const normal = new Vector2(-(p2.y - p1.y), p2.x - p1.x);
+		return normal.multiply(1 / normal.length());
+	}
+
 	update() {
+		const rigidbody = this.parent.getComponent(Rigidbody) as Rigidbody;
+		if (!rigidbody) return;
 		this.parent.engine.children.forEach((object) => {
 			if (object == this.parent) return;
 			if (!object.getComponent(Collider)) return;
 
-			this.parent.path.forEach((vector) => {
-				if (this.isInside(object, AddVector2(vector, this.parent.position))) console.log("Collision");
+			//if (object.getComponent(Rigidbody)) return;
+			rigidbody.isGrounded = false;
+
+			this.parent.path.some((vector) => {
+				if (this.isInside(object, AddVector2(vector, this.parent.position))) {
+					let shortestVector: Vector2 = new Vector2(this.INF, this.INF);
+					for (let i = 0; i < object.path.length; i++) {
+						const normal = this.calculateNormal(object.path[i], object.path[(i + 1) % object.path.length]);
+						const extreme = AddVector2(AddVector2(vector, this.parent.position), normal.multiply(this.INF));
+						const exit = this.calculateIntersection(
+							AddVector2(vector, this.parent.position),
+							extreme,
+							AddVector2(object.path[i], object.position),
+							AddVector2(object.path[(i + 1) % object.path.length], object.position)
+						);
+
+						shortestVector = exit?.length() < shortestVector.length() ? exit : shortestVector;
+					}
+					this.parent.position.x = shortestVector.x - vector.x;
+					this.parent.position.y = shortestVector.y - vector.y;
+
+					rigidbody.isGrounded = true;
+
+					if (Math.abs(shortestVector.x) >= 0.5) rigidbody.velocity.x = 0;
+					if (Math.abs(shortestVector.y) >= 0.5) rigidbody.velocity.y = 0;
+
+					return true;
+				}
 			});
 		});
 	}

@@ -1,4 +1,5 @@
 import DefaultObject from "./BaseClasses/BaseObject";
+import Vector2 from "./BaseClasses/Vector2";
 
 interface PhysicsProperties {
 	gravity: number;
@@ -8,14 +9,18 @@ export default class Engine {
 	ctx: CanvasRenderingContext2D;
 	deltaTime: number;
 	private lastDeltaTime: number;
+	private stopped: boolean;
 	children: DefaultObject[];
 	properties: PhysicsProperties;
+	private debugShapes: { type: string; points: Vector2 | Vector2[] }[];
 	constructor(ctx: CanvasRenderingContext2D) {
 		this.ctx = ctx;
 		this.deltaTime = 0;
 		this.lastDeltaTime = performance.now();
+		this.stopped = false;
 		this.children = [];
 		this.properties = { gravity: 9.82 };
+		this.debugShapes = [];
 	}
 
 	addObject(object: DefaultObject) {
@@ -28,19 +33,54 @@ export default class Engine {
 		this.children.forEach((object) => {
 			this.ctx.beginPath();
 			object.path.forEach((vector) => {
-				this.ctx.lineTo((vector.x + object.position.x) * 10 + window.innerWidth / 2, -(vector.y + object.position.y) * 10 + window.innerHeight / 2);
+				this.ctx.lineTo((vector.x + object.position.x) * 100 + window.innerWidth / 2, -(vector.y + object.position.y) * 100 + window.innerHeight / 2);
 			});
 			this.ctx.closePath();
 			this.ctx.stroke();
 		});
+
+		this.debugShapes.forEach((shape) => {
+			switch (shape.type) {
+				case "dot":
+					shape.points = shape.points as Vector2;
+					this.ctx.beginPath();
+					this.ctx.arc(shape.points.x * 100 + window.innerWidth / 2, -shape.points.y * 100 + window.innerHeight / 2, 5, 0, 2 * Math.PI, false);
+					this.ctx.fillStyle = "#ff0000";
+					this.ctx.fill();
+					break;
+				case "line":
+					shape.points = shape.points as Vector2[];
+					this.ctx.beginPath();
+					this.ctx.moveTo(shape.points[0].x * 100 + window.innerWidth / 2, -shape.points[0].y * 100 + window.innerHeight / 2);
+					this.ctx.lineTo(shape.points[1].x * 100 + window.innerWidth / 2, -shape.points[1].y * 100 + window.innerHeight / 2);
+					this.ctx.fillStyle = "#ff0000";
+					this.ctx.stroke();
+					break;
+			}
+		});
+
+		this.debugShapes = [];
 	}
 
 	update() {
+		if (this.stopped) return;
 		const perf = performance.now();
 		this.deltaTime = (perf - this.lastDeltaTime) / 1000;
 		this.lastDeltaTime = perf;
 		this.children.forEach((object) => {
 			object.update();
 		});
+	}
+
+	stop() {
+		this.stopped = true;
+	}
+
+	debugPoint(position: Vector2) {
+		this.debugShapes.push({ type: "dot", points: position });
+	}
+
+	debugLine(p1: Vector2, p2: Vector2) {
+		this.debugShapes.push({ type: "line", points: [p1, p2] });
 	}
 }

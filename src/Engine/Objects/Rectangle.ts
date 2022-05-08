@@ -6,10 +6,11 @@ export default class Rectangle extends BaseObject {
 		super();
 		this.position = new Vector2(x, y);
 		const rectangle: Vector2[] = [];
-		rectangle.push(new Vector2(-width / 2, -height / 2));
-		rectangle.push(new Vector2(width / 2, -height / 2));
-		rectangle.push(new Vector2(width / 2, height / 2));
 		rectangle.push(new Vector2(-width / 2, height / 2));
+		rectangle.push(new Vector2(width / 2, height / 2));
+		rectangle.push(new Vector2(width / 2, -height / 2));
+		rectangle.push(new Vector2(-width / 2, -height / 2));
+
 		this.setPath(rectangle);
 	}
 }

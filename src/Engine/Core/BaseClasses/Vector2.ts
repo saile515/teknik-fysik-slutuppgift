@@ -15,6 +15,10 @@ export default class Vector2 {
 	multiply(num: number) {
 		return new Vector2(this.x * num, this.y * num);
 	}
+
+	length() {
+		return Math.sqrt(this.x ** 2 + this.y ** 2);
+	}
 }
 
 export function AddVector2(vector1: Vector2, vector2: Vector2) {
