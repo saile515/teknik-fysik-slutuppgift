@@ -8,11 +8,13 @@ interface PhysicsProperties {
 export default class Engine {
 	ctx: CanvasRenderingContext2D;
 	deltaTime: number;
-	private lastDeltaTime: number;
-	private stopped: boolean;
 	children: DefaultObject[];
 	properties: PhysicsProperties;
 	private debugShapes: { type: string; points: Vector2 | Vector2[] }[];
+	private frameDelays: number[];
+	private lastDeltaTime: number;
+	private stopped: boolean;
+	fps: number;
 	constructor(ctx: CanvasRenderingContext2D) {
 		this.ctx = ctx;
 		this.deltaTime = 0;
@@ -21,6 +23,8 @@ export default class Engine {
 		this.children = [];
 		this.properties = { gravity: 9.82 };
 		this.debugShapes = [];
+		this.frameDelays = [0];
+		this.fps = 0;
 	}
 
 	addObject(object: DefaultObject) {
@@ -63,6 +67,11 @@ export default class Engine {
 	}
 
 	update() {
+		if (this.frameDelays.length >= 100) {
+			this.frameDelays.shift();
+		}
+		this.frameDelays.push(this.deltaTime);
+		this.fps = Math.floor(1 / (this.frameDelays.reduce((sum, num) => sum + num, 0) / this.frameDelays.length) + 0.5);
 		if (this.stopped) return;
 		const perf = performance.now();
 		this.deltaTime = (perf - this.lastDeltaTime) / 1000;

@@ -1,3 +1,5 @@
+import { ReactElement, useRef } from "react";
+
 import Canvas from "./components/Canvas";
 
 function App() {
