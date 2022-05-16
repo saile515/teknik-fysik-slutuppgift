@@ -153,17 +153,26 @@ export default class Collider extends BaseComponent {
 
 	update() {
 		const rigidbody = this.parent.getComponent(Rigidbody) as Rigidbody;
+		// Collisions only run on objects with rigidbodies
 		if (!rigidbody) return;
+
+		// Iterate all objects in scene
 		this.parent.engine.children.forEach((object) => {
+			// Return if object lacks collider
 			if (object == this.parent) return;
 			if (!object.getComponent(Collider)) return;
 
-			//if (object.getComponent(Rigidbody)) return;
+			// Temporary variable to prevent clipping with static objects
 			rigidbody.isGrounded = false;
 
+			// Iterate all points in object
 			this.parent.path.some((vector) => {
+				// Check if point is inside object
 				if (this.isInside(object, AddVector2(vector, this.parent.position))) {
+					// Initiate shortest vector as largest possible vector
 					let shortestVector: Vector2 = new Vector2(this.INF, this.INF);
+
+					// Iterate all sides of object to find closest edge
 					for (let i = 0; i < object.path.length; i++) {
 						const normal = this.calculateNormal(object.path[i], object.path[(i + 1) % object.path.length]);
 						const extreme = AddVector2(AddVector2(vector, this.parent.position), normal.multiply(this.INF));
@@ -174,15 +183,26 @@ export default class Collider extends BaseComponent {
 							AddVector2(object.path[(i + 1) % object.path.length], object.position)
 						);
 
-						shortestVector = exit?.length() < shortestVector.length() ? exit : shortestVector;
+						shortestVector =
+							AddVector2(exit, AddVector2(this.parent.position, vector).multiply(-1)).length() <
+							AddVector2(shortestVector, AddVector2(this.parent.position, vector).multiply(-1)).length()
+								? exit
+								: shortestVector;
 					}
-					this.parent.position.x = shortestVector.x - vector.x;
-					this.parent.position.y = shortestVector.y - vector.y;
+
+					const objectRigidbody = object.getComponent(Rigidbody) as Rigidbody;
+					// Total distance objects have to move
+					const diff = AddVector2(AddVector2(this.parent.position, vector).multiply(-1), shortestVector);
+
+					if (objectRigidbody) {
+						// Move objects relative to mass
+						this.parent.position.add(diff.multiply(objectRigidbody.mass / (rigidbody.mass + objectRigidbody.mass)));
+						object.position.add(diff.multiply(-1 * (rigidbody.mass / (rigidbody.mass + objectRigidbody.mass))));
+					} else {
+						this.parent.position = AddVector2(shortestVector, vector.multiply(-1));
+					}
 
 					rigidbody.isGrounded = true;
-
-					if (Math.abs(shortestVector.x) >= 0.5) rigidbody.velocity.x = 0;
-					if (Math.abs(shortestVector.y) >= 0.5) rigidbody.velocity.y = 0;
 
 					return true;
 				}

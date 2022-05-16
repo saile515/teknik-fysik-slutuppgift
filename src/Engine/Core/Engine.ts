@@ -10,7 +10,7 @@ export default class Engine {
 	deltaTime: number;
 	children: DefaultObject[];
 	properties: PhysicsProperties;
-	private debugShapes: { type: string; points: Vector2 | Vector2[] }[];
+	private debugShapes: { type: string; points: Vector2 | Vector2[]; text?: string }[];
 	private frameDelays: number[];
 	private lastDeltaTime: number;
 	private stopped: boolean;
@@ -60,10 +60,14 @@ export default class Engine {
 					this.ctx.fillStyle = "#ff0000";
 					this.ctx.stroke();
 					break;
+				case "text":
+					shape.points = shape.points as Vector2;
+					this.ctx.font = "20px Arial";
+					this.ctx.fillText(shape.text, shape.points.x * 100 + window.innerWidth / 2, -shape.points.y * 100 + window.innerHeight / 2);
 			}
 		});
 
-		this.debugShapes = [];
+		if (!this.stopped) this.debugShapes = [];
 	}
 
 	update() {
@@ -91,5 +95,9 @@ export default class Engine {
 
 	debugLine(p1: Vector2, p2: Vector2) {
 		this.debugShapes.push({ type: "line", points: [p1, p2] });
+	}
+
+	debugText(text: string, position: Vector2) {
+		this.debugShapes.push({ type: "text", points: position, text: text });
 	}
 }
