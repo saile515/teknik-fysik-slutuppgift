@@ -150,6 +150,9 @@ export default class Collider extends BaseComponent {
 		const normal = new Vector2(-(p2.y - p1.y), p2.x - p1.x);
 		return normal.multiply(1 / normal.length());
 	}
+	combinedVelocity(v1: number, v2: number, m1: number, m2: number) {
+		return (m1 * v1 + m2 * v2) / (m1 + m2);
+	}
 
 	update() {
 		const rigidbody = this.parent.getComponent(Rigidbody) as Rigidbody;
@@ -162,11 +165,8 @@ export default class Collider extends BaseComponent {
 			if (object == this.parent) return;
 			if (!object.getComponent(Collider)) return;
 
-			// Temporary variable to prevent clipping with static objects
-			rigidbody.isGrounded = false;
-
 			// Iterate all points in object
-			this.parent.path.some((vector) => {
+			const collision = this.parent.path.some((vector) => {
 				// Check if point is inside object
 				if (this.isInside(object, AddVector2(vector, this.parent.position))) {
 					// Initiate shortest vector as largest possible vector
@@ -198,6 +198,16 @@ export default class Collider extends BaseComponent {
 						// Move objects relative to mass
 						this.parent.position.add(diff.multiply(objectRigidbody.mass / (rigidbody.mass + objectRigidbody.mass)));
 						object.position.add(diff.multiply(-1 * (rigidbody.mass / (rigidbody.mass + objectRigidbody.mass))));
+						// Determine combined velocity
+						if (!rigidbody.isGrounded) {
+							const combinedVelocity: Vector2 = new Vector2(
+								this.combinedVelocity(rigidbody.velocity.x, objectRigidbody.velocity.x, rigidbody.mass, objectRigidbody.mass),
+								this.combinedVelocity(rigidbody.velocity.y, objectRigidbody.velocity.y, rigidbody.mass, objectRigidbody.mass)
+							);
+
+							rigidbody.velocity = combinedVelocity;
+							objectRigidbody.velocity = combinedVelocity;
+						}
 					} else {
 						this.parent.position = AddVector2(shortestVector, vector.multiply(-1));
 					}
@@ -207,6 +217,11 @@ export default class Collider extends BaseComponent {
 					return true;
 				}
 			});
+
+			if (!collision) {
+				// Temporary variable to prevent clipping with static objects
+				rigidbody.isGrounded = false;
+			}
 		});
 	}
 }

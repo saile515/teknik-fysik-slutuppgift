@@ -22,7 +22,7 @@ export function init(ctx: CanvasRenderingContext2D) {
 
 	const poly1 = new BaseObject();
 	poly1.path = [new Vector2(-1, 1.5), new Vector2(2, 1.5), new Vector2(1, -1), new Vector2(-1, -1)];
-	poly1.position = new Vector2(0, 5);
+	poly1.position = new Vector2(-2, 5);
 	poly1.addComponent(new Rigidbody());
 	(poly1.getComponent(Rigidbody) as Rigidbody).mass = 20;
 	poly1.addComponent(new Collider());
@@ -35,6 +35,7 @@ export function init(ctx: CanvasRenderingContext2D) {
 	function update() {
 		engine.update();
 		engine.render();
+		(rect1.getComponent(Rigidbody) as Rigidbody).forces.push(new Vector2(-10, 0));
 		requestAnimationFrame(update);
 	}
 
