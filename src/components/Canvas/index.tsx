@@ -1,6 +1,6 @@
 import * as Engine from "../../Scenes/testScene";
 
-import { ReactElement, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Canvas() {
 	const ref = useRef<HTMLCanvasElement>(null);
